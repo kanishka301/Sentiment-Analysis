@@ -1,0 +1,6 @@
+venv/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+# Large model file; plots, metrics and CSVs in outputs/ are kept
+outputs/*.keras
