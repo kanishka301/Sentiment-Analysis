@@ -1,71 +1,127 @@
 # IMDb Sentiment Analysis using DistilBERT + TensorFlow
 
-A notebook-first NLP project that fine-tunes pretrained DistilBERT for positive/negative movie-review sentiment classification.
+A notebook-based Natural Language Processing (NLP) project that fine-tunes a pretrained **DistilBERT Transformer** for binary sentiment classification of IMDb movie reviews. The project explores transfer learning, compares Transformer-based classification against a traditional TF-IDF + Logistic Regression baseline, and performs threshold optimization and error analysis.
 
-## Stack
+## Tech Stack
 
-- TensorFlow / Keras
-- KerasHub (DistilBERT preset and text preprocessing)
-- scikit-learn, pandas, matplotlib
+- **Deep Learning:** TensorFlow, Keras
+- **NLP:** DistilBERT, KerasHub
+- **Machine Learning:** Scikit-learn, Logistic Regression, TF-IDF
+- **Data Analysis:** Pandas, NumPy
+- **Visualization:** Matplotlib
 
-This project does **not** use PyTorch or Hugging Face Trainer.
+This is a TensorFlow/Keras implementation. It does not use PyTorch or Hugging Face Trainer.
 
 ## Dataset
 
-IMDb reviews are loaded with `keras.datasets.imdb` and converted back to text for the DistilBERT tokenizer. The data downloads automatically on the first run.
+The project uses the IMDb movie review dataset available through `keras.datasets.imdb`.
 
-The notebook uses a stratified subset:
-- 8,000 training reviews (80% train / 20% validation)
-- 5,000 reviews from the official test split
+Reviews are reconstructed from their word-index representations and processed using the DistilBERT tokenizer and preprocessing pipeline.
 
-Sizes are configurable in the notebook and saved in `outputs/metrics.json`.
+A stratified subset is used to keep model fine-tuning computationally manageable:
 
-## Results
+| Dataset | Samples |
+|---|---:|
+| Training | 6,400 |
+| Validation | 1,600 |
+| Testing | 5,000 |
+| **Total** | **13,000** |
 
-Test set of 5,000 reviews, 2 epochs, sequence length 128:
+The training and validation samples are selected from the official training split, while the test samples come from the official test split.
 
-| Accuracy | ROC-AUC | Negative recall | Positive recall |
-|---|---|---|---|
-| 85.7% | 0.943 | 0.784 | 0.930 |
+## Model Performance
 
-The model is stronger on positive reviews than negative ones.
+The fine-tuned DistilBERT model was evaluated on 5,000 held-out IMDb reviews after two training epochs.
 
-## Project structure
+### DistilBERT results
+
+| Metric | Default Threshold (0.50) | Tuned Threshold (0.75) |
+|---|---:|---:|
+| Accuracy | 88.28% | **89.46%** |
+| ROC-AUC | 0.9619 | 0.9619 |
+| Precision | 84.15% | 91.02% |
+| Recall | 94.32% | 87.56% |
+| F1-score | 88.95% | 89.26% |
+| Negative Recall | 82.24% | 91.36% |
+
+The decision threshold was optimized using validation-set macro-F1 and then applied to the held-out test set. This improved overall accuracy and balanced performance between positive and negative reviews.
+
+### Baseline comparison
+
+A TF-IDF + Logistic Regression model was implemented as a traditional machine learning baseline.
+
+| Model | Test Accuracy | ROC-AUC |
+|---|---:|---:|
+| TF-IDF + Logistic Regression | 88.12% | 0.9525 |
+| DistilBERT (default threshold) | 88.28% | 0.9619 |
+| DistilBERT (tuned threshold) | **89.46%** | **0.9619** |
+
+## Project Workflow
+
+1. Load and reconstruct IMDb movie reviews from word indices.
+2. Create stratified training, validation and test samples.
+3. Build a TF-IDF + Logistic Regression baseline.
+4. Load pretrained DistilBERT using KerasHub.
+5. Fine-tune the Transformer using TensorFlow/Keras.
+6. Monitor training and validation accuracy and loss.
+7. Evaluate using accuracy, precision, recall, F1-score and ROC-AUC.
+8. Analyze predictions using a confusion matrix.
+9. Optimize the classification threshold using validation macro-F1.
+10. Compare baseline and Transformer performance.
+11. Investigate misclassified reviews, high-confidence errors and error patterns.
+12. Generate sentiment predictions for custom movie reviews.
+13. Save the trained model, evaluation metrics and analysis outputs.
+
+## Project Structure
 
 ```text
 IMDb_DistilBERT_TensorFlow/
+│
 ├── sentiment_analysis_distilbert_tensorflow.ipynb
 ├── requirements.txt
 ├── README.md
-└── outputs/        # created when the notebook runs
+│
+└── outputs/
+    ├── distilbert_imdb.keras
+    ├── metrics.json
+    ├── model_comparison.csv
+    ├── training_curves.png
+    ├── confusion_matrix.png
+    ├── misclassified_reviews.csv
+    ├── high_confidence_errors.csv
+    └── error_analysis_summary.csv
 ```
 
-## Run
+The outputs directory and its files are generated when the notebook is executed.
 
-A GPU runtime such as Google Colab T4 is strongly recommended.
+## How to Run
 
-1. Open the notebook in Google Colab or Jupyter and select a GPU runtime.
-2. Run the install cell, then the remaining cells from top to bottom.
+A GPU-enabled environment such as Google Colab with a T4 GPU is recommended for fine-tuning DistilBERT.
 
-Local setup: `pip install -r requirements.txt`
+1. Clone the repository.
+2. Open the notebook in Google Colab or Jupyter Notebook.
+3. Select a GPU runtime.
+4. Install the dependencies using the installation cell or:
 
-## Workflow
+```bash
+pip install -r requirements.txt
+```
 
-1. Load IMDb reviews and rebuild text from word indices
-2. Create train / validation / test samples
-3. Load pretrained DistilBERT with KerasHub
-4. Fine-tune with TensorFlow/Keras
-5. Plot training and validation curves
-6. Evaluate with accuracy, precision, recall, F1 and ROC-AUC
-7. Plot a confusion matrix
-8. Inspect misclassified and high-confidence incorrect reviews
-9. Predict sentiment for custom reviews
-10. Save model and metrics
+5. Execute the notebook cells sequentially.
 
-## Outputs
-
-`distilbert_imdb.keras` (git-ignored), `metrics.json`, `training_curves.png`, `confusion_matrix.png`, `misclassified_reviews.csv`, `high_confidence_errors.csv`
+The IMDb dataset downloads automatically during the first execution.
 
 ## Limitations
 
-A subset of IMDb is used, reviews are cut to 128 tokens and rebuilt from word indices (lowercase, no punctuation), and results come from a single run.
+- The experiment uses a subset of the IMDb dataset rather than the complete dataset.
+- Reviews are reconstructed from word indices, resulting in lowercase text without original punctuation.
+- DistilBERT processes a maximum sequence length of 256 tokens, so longer reviews are truncated.
+- The TF-IDF baseline uses full reconstructed reviews, whereas DistilBERT uses truncated sequences.
+- Results are based on a single training run and may vary with random initialization and training conditions.
+- Threshold optimization is performed on a relatively small validation set.
+- Error-category analysis uses simple keyword-based rules and cannot reliably identify complex linguistic phenomena such as sarcasm.
+- No production deployment or API integration is included.
+
+## Key Takeaway
+
+This project demonstrates the application of transfer learning using pretrained Transformer architectures for NLP classification. It also highlights the importance of baseline comparisons, class-wise evaluation, decision-threshold optimization and error analysis when developing machine learning models.
